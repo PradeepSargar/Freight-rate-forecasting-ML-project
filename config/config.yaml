@@ -1,0 +1,16 @@
+project:
+  name: FreightIQ
+  random_seed: 42
+
+paths:
+  raw_data: data/raw
+  processed_data: data/processed
+  models: models
+  reports: reports
+
+forecasting:
+  target: freight_rate
+  horizon_days: 30
+
+vessel_selection:
+  target: recommended_vessel

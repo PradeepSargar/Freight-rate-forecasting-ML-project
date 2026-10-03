@@ -1,0 +1,10 @@
+numpy
+pandas
+scikit-learn
+statsmodels
+xgboost
+streamlit
+pyyaml
+python-dotenv
+joblib
+pytest
