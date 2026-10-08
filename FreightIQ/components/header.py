@@ -4,6 +4,7 @@ Renders page-level hero headers with branding.
 """
 
 from __future__ import annotations
+import textwrap
 import streamlit as st
 
 
@@ -31,15 +32,13 @@ def render_hero(
             f'</div>'
             for label, value in meta_items
         )
-        meta_html = f"""
-        <div style="display:flex; gap:2rem; margin-top:1rem; padding-top:1rem;
-                    border-top:1px solid #1E2940;">
-            {items_html}
-        </div>
-        """
+        meta_html = (
+            f'<div style="display:flex; gap:2rem; margin-top:1rem; padding-top:1rem; '
+            f'border-top:1px solid #1E2940;">{items_html}</div>'
+        )
 
     st.markdown(
-        f"""
+        textwrap.dedent(f"""
         <div style="padding: 1.5rem 0 1.25rem 0; border-bottom:1px solid #1E2940; margin-bottom:1.5rem;">
             {badge_html}
             <h1 style="font-size:1.75rem; font-weight:800; color:#F8FAFC; margin:0;
@@ -48,7 +47,7 @@ def render_hero(
                       font-weight:400; line-height:1.5;">{subtitle}</p>
             {meta_html}
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True,
     )
 
@@ -60,12 +59,12 @@ def render_section_header(title: str, subtitle: str = "") -> None:
         if subtitle else ""
     )
     st.markdown(
-        f"""
+        textwrap.dedent(f"""
         <div style="margin:1.5rem 0 0.75rem 0;">
             <h3 style="font-size:1.05rem; font-weight:700; color:#F8FAFC; margin:0;">{title}</h3>
             {sub_html}
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True,
     )
 
@@ -73,7 +72,7 @@ def render_section_header(title: str, subtitle: str = "") -> None:
 def render_disclaimer() -> None:
     """Render the standard FreightIQ model disclaimer."""
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="fiq-disclaimer">
             <strong style="color:#94A3B8; font-size:0.78rem;">⚠ Analytical Disclaimer</strong><br>
             FreightIQ provides model-based analytical forecasts for research and decision-support purposes.
@@ -82,7 +81,7 @@ def render_disclaimer() -> None:
             The 7, 14 and 30 horizons represent future observations in the modeling dataset and
             should not automatically be interpreted as exact calendar-day forecasts.
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True,
     )
 
@@ -90,7 +89,7 @@ def render_disclaimer() -> None:
 def render_footer() -> None:
     """Render the professional FreightIQ footer."""
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="fiq-footer">
             <div style="font-size:0.82rem; font-weight:800; color:#94A3B8;
                         letter-spacing:0.1em;">FREIGHTIQ</div>
@@ -105,6 +104,6 @@ def render_footer() -> None:
             </div>
             <div style="margin-top:6px; color:#1E2940;">&copy; 2026 FreightIQ</div>
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True,
     )

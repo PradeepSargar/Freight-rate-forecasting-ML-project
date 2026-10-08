@@ -1,7 +1,7 @@
 """
 FreightIQ — Page 05: Methodology
 """
-import sys, os
+import sys, os, textwrap
 from pathlib import Path
 _HERE = Path(__file__).resolve().parent
 _ROOT = _HERE.parent
@@ -47,33 +47,38 @@ PIPELINE_STEPS = [
     ("Data Cleaning",         "#38BDF8", "Handling missing values, outlier identification, and date alignment across multiple sources."),
     ("Data Integration",      "#38BDF8", "Merging all indicator series into a unified daily panel dataset."),
     ("Feature Engineering",   "#22C55E", "Lag features (1, 7 obs), rolling means (7, 14, 30 obs), date features, and cross-indicator lags."),
-    ("Leakage Prevention",    "#22C55E", "Target shift validation to ensure no future BDI information leaked into input features."),
+    ("Leakage Check",         "#22C55E", "Target shift validation to ensure no future BDI information leaked into input features."),
     ("Time-Based Validation", "#F59E0B", "Strict temporal train/holdout split + TimeSeriesSplit cross-validation preserving chronological order."),
-    ("XGBoost Training",      "#A78BFA", "Three separate XGBoost Regressor models trained per forecast horizon (7 / 14 / 30 observations)."),
+    ("XGBoost",               "#A78BFA", "Three separate XGBoost Regressor models trained per forecast horizon (7 / 14 / 30 observations)."),
     ("7 / 14 / 30 Forecasts", "#EF4444", "Final BDI forecasts generated from the latest available market data."),
 ]
 
-pipeline_html = '<div style="display:flex; flex-direction:column; gap:0; max-width:680px;">'
+pipeline_steps_html = []
 for i, (step, color, desc) in enumerate(PIPELINE_STEPS):
     connector = (
         f'<div style="width:2px; height:16px; background:{color}; margin-left:19px; opacity:0.5;"></div>'
         if i < len(PIPELINE_STEPS) - 1
         else ""
     )
-    pipeline_html += f"""
-    <div style="display:flex; align-items:flex-start; gap:12px;">
-        <div style="flex-shrink:0; width:38px; height:38px; border-radius:50%;
-                    background:#151E2E; border:2px solid {color};
-                    display:flex; align-items:center; justify-content:center;
-                    font-size:0.75rem; font-weight:700; color:{color};">{i+1}</div>
-        <div style="flex:1; padding-bottom:4px;">
-            <div style="font-size:0.85rem; font-weight:700; color:#F8FAFC;">{step}</div>
-            <div style="font-size:0.75rem; color:#94A3B8; margin-top:2px; line-height:1.5;">{desc}</div>
-        </div>
-    </div>
-    {connector}
-    """
-pipeline_html += "</div>"
+    pipeline_steps_html.append(
+        f'<div style="display:flex; align-items:flex-start; gap:12px;">'
+        f'<div style="flex-shrink:0; width:38px; height:38px; border-radius:50%; '
+        f'background:#151E2E; border:2px solid {color}; '
+        f'display:flex; align-items:center; justify-content:center; '
+        f'font-size:0.75rem; font-weight:700; color:{color};">{i+1}</div>'
+        f'<div style="flex:1; padding-bottom:4px;">'
+        f'<div style="font-size:0.85rem; font-weight:700; color:#F8FAFC;">{step}</div>'
+        f'<div style="font-size:0.75rem; color:#94A3B8; margin-top:2px; line-height:1.5;">{desc}</div>'
+        f'</div>'
+        f'</div>'
+        f'{connector}'
+    )
+
+pipeline_html = (
+    '<div style="display:flex; flex-direction:column; gap:0; max-width:680px;">'
+    + "".join(pipeline_steps_html)
+    + '</div>'
+)
 st.markdown(pipeline_html, unsafe_allow_html=True)
 
 st.markdown("---")
@@ -81,7 +86,7 @@ st.markdown("---")
 # ── Problem Statement ─────────────────────────────────────────────────────────
 st.markdown("<div class='fiq-section-title'>Problem Statement</div>", unsafe_allow_html=True)
 st.markdown(
-    """
+    textwrap.dedent("""
     <div class="fiq-card">
     <p style="color:#94A3B8; font-size:0.9rem; line-height:1.8; margin:0;">
     The Baltic Dry Index (BDI) is a composite measure of global dry-bulk shipping costs across
@@ -96,7 +101,7 @@ st.markdown(
     feature-rich, tree-based regression approach.
     </p>
     </div>
-    """,
+    """).strip(),
     unsafe_allow_html=True,
 )
 
@@ -109,7 +114,7 @@ src_cols = st.columns(2, gap="medium")
 
 with src_cols[0]:
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="fiq-card">
             <div class="fiq-label" style="color:#38BDF8; border-bottom:1px solid #1E2940;
                                           padding-bottom:0.5rem; margin-bottom:0.75rem;">
@@ -135,13 +140,13 @@ with src_cols[0]:
                 </div>
             </div>
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True,
     )
 
 with src_cols[1]:
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="fiq-card">
             <div class="fiq-label" style="color:#22C55E; border-bottom:1px solid #1E2940;
                                           padding-bottom:0.5rem; margin-bottom:0.75rem;">
@@ -166,7 +171,7 @@ with src_cols[1]:
                 </div>
             </div>
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True,
     )
 
@@ -208,14 +213,14 @@ for col, (title, color, items) in zip(fe_cols, fe_items):
             for item in items
         )
         st.markdown(
-            f"""
+            textwrap.dedent(f"""
             <div class="fiq-card">
                 <div style="font-size:0.72rem; color:{color}; font-weight:700;
                             text-transform:uppercase; letter-spacing:0.08em;
                             margin-bottom:0.6rem;">{title}</div>
                 {items_html}
             </div>
-            """,
+            """).strip(),
             unsafe_allow_html=True,
         )
 
@@ -224,7 +229,7 @@ st.markdown("---")
 # ── Leakage Prevention ────────────────────────────────────────────────────────
 st.markdown("<div class='fiq-section-title'>Leakage Prevention</div>", unsafe_allow_html=True)
 st.markdown(
-    """
+    textwrap.dedent("""
     <div class="fiq-card">
     <p style="color:#94A3B8; font-size:0.88rem; line-height:1.9; margin:0;">
     A critical concern in time-series forecasting is data leakage — when information from
@@ -244,7 +249,7 @@ st.markdown(
             <span class="fiq-badge fiq-badge-green">PASSED</span></li>
     </ul>
     </div>
-    """,
+    """).strip(),
     unsafe_allow_html=True,
 )
 
@@ -257,7 +262,7 @@ val_col1, val_col2 = st.columns(2, gap="medium")
 
 with val_col1:
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="fiq-card">
             <div style="font-size:0.72rem; color:#38BDF8; font-weight:700;
                         text-transform:uppercase; letter-spacing:0.08em;
@@ -272,13 +277,13 @@ with val_col1:
                 <span class="fiq-badge">Temporal Integrity: MAINTAINED</span>
             </div>
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True,
     )
 
 with val_col2:
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="fiq-card">
             <div style="font-size:0.72rem; color:#22C55E; font-weight:700;
                         text-transform:uppercase; letter-spacing:0.08em;
@@ -293,7 +298,7 @@ with val_col2:
                 <span class="fiq-badge fiq-badge-green">Regime Coverage: MULTI-FOLD</span>
             </div>
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True,
     )
 
@@ -313,12 +318,12 @@ q_cols = st.columns(5, gap="small")
 for col, (label, value, color, badge_cls) in zip(q_cols, quality_items):
     with col:
         st.markdown(
-            f"""
+            textwrap.dedent(f"""
             <div class="fiq-card" style="height:100px; text-align:center; padding:1rem;">
                 <div class="fiq-label" style="margin-bottom:0.4rem;">{label}</div>
                 <span class="{badge_cls}">{value}</span>
             </div>
-            """,
+            """).strip(),
             unsafe_allow_html=True,
         )
 
@@ -327,7 +332,7 @@ st.markdown("---")
 # ── Forecast Generation ───────────────────────────────────────────────────────
 st.markdown("<div class='fiq-section-title'>Forecast Generation</div>", unsafe_allow_html=True)
 st.markdown(
-    """
+    textwrap.dedent("""
     <div class="fiq-card">
     <p style="color:#94A3B8; font-size:0.88rem; line-height:1.9; margin:0;">
     Three independent XGBoost Regressor models are trained — one per forecast horizon.
@@ -343,7 +348,7 @@ st.markdown(
         <span class="fiq-badge">30-Observation Model</span>
     </div>
     </div>
-    """,
+    """).strip(),
     unsafe_allow_html=True,
 )
 
