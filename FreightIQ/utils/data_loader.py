@@ -60,26 +60,62 @@ def load_feature_engineered() -> pd.DataFrame | None:
 
 # ── Derived helpers ──────────────────────────────────────────────────────────
 
-def get_forecast_for_horizon(df: pd.DataFrame, horizon_label: str) -> dict | None:
+def get_forecast_for_horizon(df: pd.DataFrame, horizon: int | str) -> dict | None:
     """
-    Return a dict with keys: current_bdi, forecasted_bdi, forecast_date, horizon
-    for the given horizon_label (e.g. '7 observations').
+    Return a dict with keys: current_bdi, forecasted_bdi, forecast_date, horizon, horizon_days
+    for the given horizon (e.g. 7, 14, 30).
     """
-    if df is None:
+    if df is None or df.empty:
         return None
-    row = df[df["Forecast_Horizon"].str.lower() == horizon_label.lower()]
+
+    # Determine integer horizon value
+    try:
+        h_val = int(horizon) if not isinstance(horizon, str) else int("".join(filter(str.isdigit, horizon)) or 7)
+    except (ValueError, TypeError):
+        h_val = 7
+
+    # 1. Direct comparison: forecast_df["Forecast_Horizon"] == horizon
+    row = df[df["Forecast_Horizon"] == horizon]
+
+    # 2. Numeric comparison if Forecast_Horizon contains integers
+    if row.empty:
+        row = df[df["Forecast_Horizon"] == h_val]
+
+    # 3. Numeric extraction comparison if Forecast_Horizon has text like '7 observations'
+    if row.empty:
+        try:
+            numeric_col = pd.to_numeric(df["Forecast_Horizon"], errors="coerce")
+            row = df[numeric_col == h_val]
+        except Exception:
+            pass
+
+    if row.empty:
+        try:
+            extracted = df["Forecast_Horizon"].astype(str).str.extract(r"(\d+)")[0].astype(int)
+            row = df[extracted == h_val]
+        except Exception:
+            pass
+
+    if row.empty:
+        str_target = f"{h_val} observations"
+        row = df[df["Forecast_Horizon"].astype(str).str.lower() == str_target.lower()]
+
     if row.empty:
         return None
+
     row = row.iloc[0]
     current = float(row["Current_BDI"])
     forecast = float(row["Forecasted_BDI"])
     change = forecast - current
     pct_change = (change / current) * 100 if current != 0 else 0.0
+    h_str = str(row["Forecast_Horizon"])
+
     return {
         "current_bdi":     current,
         "forecasted_bdi":  forecast,
         "forecast_date":   row["Forecast_Date"],
-        "horizon":         row["Forecast_Horizon"],
+        "horizon":         h_str,
+        "horizon_days":    h_val,
         "change":          change,
         "pct_change":      pct_change,
         "direction":       "Increasing" if change > 0 else ("Decreasing" if change < 0 else "Neutral"),
@@ -88,7 +124,7 @@ def get_forecast_for_horizon(df: pd.DataFrame, horizon_label: str) -> dict | Non
 
 def get_all_forecasts(df: pd.DataFrame) -> list[dict]:
     """Return list of forecast dicts for all horizons."""
-    horizons = ["7 observations", "14 observations", "30 observations"]
+    horizons = [7, 14, 30]
     return [get_forecast_for_horizon(df, h) for h in horizons]
 
 

@@ -269,7 +269,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-selected_h = st.session_state.get("selected_horizon", "7 observations")
+selected_horizon = st.session_state.get("forecast_horizon", 7)
+selected_h = f"{selected_horizon} observations"
 fi = get_feature_importance(selected_h)
 
 if fi is not None and fi:

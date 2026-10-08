@@ -50,7 +50,9 @@ cleaned_df  = load_cleaned_dataset()
 current_bdi   = get_current_bdi(forecast_df)
 forecast_date = get_forecast_date(forecast_df)
 forecasts     = get_all_forecasts(forecast_df) if forecast_df is not None else [None, None, None]
-selected_horizon = st.session_state.get("selected_horizon", "7 observations")
+if "forecast_horizon" not in st.session_state:
+    st.session_state["forecast_horizon"] = 7
+current_horizon = st.session_state.get("forecast_horizon", 7)
 
 # ── Hero ─────────────────────────────────────────────────────────────────────
 render_hero(
@@ -61,6 +63,7 @@ render_hero(
         ("Model", "XGBoost Regression"),
         ("Last Updated", forecast_date or "—"),
         ("Current BDI", fmt_number(current_bdi, 0) if current_bdi else "—"),
+        ("Selected Horizon", f"{current_horizon} Observations"),
     ],
 )
 
@@ -72,34 +75,35 @@ if forecast_df is None:
 st.markdown("<div class='fiq-section-title'>Select Forecast Horizon</div>", unsafe_allow_html=True)
 col_h1, col_h2, col_h3, _ = st.columns([1, 1, 1, 3])
 
-if col_h1.button(
+def _on_select_horizon(h: int) -> None:
+    st.session_state["forecast_horizon"] = h
+    st.session_state["selected_horizon"] = f"{h} observations"
+
+col_h1.button(
     "7 Observations",
+    on_click=_on_select_horizon,
+    args=(7,),
     use_container_width=True,
-    type="primary" if selected_horizon == "7 observations" else "secondary",
-):
-    st.session_state["selected_horizon"] = "7 observations"
-    st.session_state["sidebar_horizon_radio"] = "7 observations"
-    st.rerun()
+    type="primary" if current_horizon == 7 else "secondary",
+)
 
-if col_h2.button(
+col_h2.button(
     "14 Observations",
+    on_click=_on_select_horizon,
+    args=(14,),
     use_container_width=True,
-    type="primary" if selected_horizon == "14 observations" else "secondary",
-):
-    st.session_state["selected_horizon"] = "14 observations"
-    st.session_state["sidebar_horizon_radio"] = "14 observations"
-    st.rerun()
+    type="primary" if current_horizon == 14 else "secondary",
+)
 
-if col_h3.button(
+col_h3.button(
     "30 Observations",
+    on_click=_on_select_horizon,
+    args=(30,),
     use_container_width=True,
-    type="primary" if selected_horizon == "30 observations" else "secondary",
-):
-    st.session_state["selected_horizon"] = "30 observations"
-    st.session_state["sidebar_horizon_radio"] = "30 observations"
-    st.rerun()
+    type="primary" if current_horizon == 30 else "secondary",
+)
 
-fc = get_forecast_for_horizon(forecast_df, selected_horizon)
+fc = get_forecast_for_horizon(forecast_df, current_horizon)
 
 st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
 
@@ -128,13 +132,13 @@ if fc is not None:
             unsafe_allow_html=True,
         )
 else:
-    st.warning(f"Forecast for horizon '{selected_horizon}' not found in data.")
+    st.warning(f"Forecast for horizon '{current_horizon} observations' not found in data.")
 
 st.markdown("<div style='margin-top:1.25rem;'></div>", unsafe_allow_html=True)
 
-# ── Horizon chart ────────────────────────────────────────────────────────────
+# ── Horizon chart ────────────────────────────────────────────────────
 if cleaned_df is not None and fc is not None:
-    fig = build_horizon_chart(cleaned_df, fc, selected_horizon)
+    fig = build_horizon_chart(cleaned_df, fc, f"{current_horizon} observations")
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True})
 
 # ── Full comparison chart (expander) ──────────────────────────────────────────
@@ -143,6 +147,7 @@ with st.expander("Show All Horizons — Combined Historical & Forecast Chart", e
         fig2 = build_bdi_forecast_chart(
             cleaned_df, forecasts,
             title="BDI Historical Trend & All Forecast Horizons",
+            selected_horizon=current_horizon,
         )
         st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": True})
 

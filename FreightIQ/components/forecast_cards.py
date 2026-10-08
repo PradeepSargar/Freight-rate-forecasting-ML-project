@@ -5,32 +5,43 @@ Renders Short/Medium/Longer-Term forecast cards with dynamic values.
 
 from __future__ import annotations
 
+import textwrap
 import streamlit as st
 from utils.formatting import fmt_number, fmt_pct, fmt_change, direction_arrow, direction_color
 
 
 HORIZON_META = [
-    ("7 observations",  "SHORT TERM",   "7 Observations"),
-    ("14 observations", "MEDIUM TERM",  "14 Observations"),
-    ("30 observations", "LONGER TERM",  "30 Observations"),
+    (7,  "SHORT TERM",   "7 Observations"),
+    (14, "MEDIUM TERM",  "14 Observations"),
+    (30, "LONGER TERM",  "30 Observations"),
 ]
 
 
-def render_forecast_cards(forecasts: list[dict | None]) -> None:
-    """Render 3-column forecast summary cards."""
+def render_forecast_cards(
+    forecasts: list[dict | None],
+    selected_horizon: int | None = None,
+) -> None:
+    """Render 3-column forecast summary cards with visual selection highlight."""
+    if selected_horizon is None:
+        try:
+            selected_horizon = st.session_state.get("forecast_horizon", 7)
+        except Exception:
+            selected_horizon = 7
+
     cols = st.columns(3, gap="medium")
 
-    for col, (h_key, term_label, obs_label), fc in zip(cols, HORIZON_META, forecasts):
+    for col, (h_days, term_label, obs_label), fc in zip(cols, HORIZON_META, forecasts):
+        is_selected = (h_days == selected_horizon)
         with col:
             if fc is None:
                 st.markdown(
-                    f"""
+                    textwrap.dedent(f"""
                     <div class="fiq-card">
                         <div class="fiq-label">{term_label}</div>
                         <div style="font-size:0.8rem; color:#64748B; margin-top:0.3rem;">{obs_label}</div>
                         <div style="margin-top:1rem; color:#64748B;">Data unavailable</div>
                     </div>
-                    """,
+                    """).strip(),
                     unsafe_allow_html=True,
                 )
                 continue
@@ -53,10 +64,19 @@ def render_forecast_cards(forecasts: list[dict | None]) -> None:
                 else "#2D1D00"
             )
 
+            card_border = "border: 2px solid #38BDF8; box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);" if is_selected else ""
+            selected_badge = (
+                '<span class="fiq-badge" style="background:#0284C7; color:#FFFFFF; margin-left:8px; font-size:0.6rem;">SELECTED</span>'
+                if is_selected else ""
+            )
+
             st.markdown(
-                f"""
-                <div class="fiq-card">
-                    <div class="fiq-label">{term_label}</div>
+                textwrap.dedent(f"""
+                <div class="fiq-card" style="{card_border}">
+                    <div style="display:flex; align-items:center;">
+                        <div class="fiq-label">{term_label}</div>
+                        {selected_badge}
+                    </div>
                     <div style="font-size:0.78rem; color:#64748B; margin-top:0.1rem;">{obs_label}</div>
                     <div style="margin-top:1rem;">
                         <div style="font-size:0.65rem; color:#64748B; text-transform:uppercase;
@@ -87,7 +107,7 @@ def render_forecast_cards(forecasts: list[dict | None]) -> None:
                         </span>
                     </div>
                 </div>
-                """,
+                """).strip(),
                 unsafe_allow_html=True,
             )
 

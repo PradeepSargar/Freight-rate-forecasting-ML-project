@@ -52,6 +52,11 @@ current_bdi   = get_current_bdi(forecast_df)
 forecast_date = get_forecast_date(forecast_df)
 forecasts     = get_all_forecasts(forecast_df) if forecast_df is not None else [None, None, None]
 
+# ── Forecast Horizon State ───────────────────────────────────────────────────
+if "forecast_horizon" not in st.session_state:
+    st.session_state["forecast_horizon"] = 7
+current_horizon = st.session_state.get("forecast_horizon", 7)
+
 # ── Hero ─────────────────────────────────────────────────────────────────────
 render_hero(
     title="FREIGHTIQ",
@@ -61,7 +66,7 @@ render_hero(
         ("Last Updated", forecast_date or "—"),
         ("Model", "XGBoost Regression"),
         ("Primary Target", "Baltic Dry Index (BDI)"),
-        ("Forecast Horizons", "7 / 14 / 30 Observations"),
+        ("Selected Horizon", f"{current_horizon} Observations"),
         ("Dataset", "3,204 rows · 33 features"),
     ],
 )
@@ -75,7 +80,7 @@ if forecast_df is None:
     st.stop()
 
 # ── KPI Cards ─────────────────────────────────────────────────────────────────
-render_kpi_cards(current_bdi, forecasts, forecast_date)
+render_kpi_cards(current_bdi, forecasts, forecast_date, selected_horizon=current_horizon)
 
 st.markdown("<div style='margin-top:1.5rem;'></div>", unsafe_allow_html=True)
 
@@ -85,7 +90,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 if cleaned_df is not None:
-    fig = build_bdi_forecast_chart(cleaned_df, forecasts)
+    fig = build_bdi_forecast_chart(cleaned_df, forecasts, selected_horizon=current_horizon)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True})
 else:
     st.warning("Historical BDI data not found. Expected: `data/processed/model1_cleaned_dataset.csv`")
@@ -95,7 +100,7 @@ st.markdown(
     "<div class='fiq-section-title' style='margin-top:1.5rem;'>Forecast Summary</div>",
     unsafe_allow_html=True,
 )
-render_forecast_cards(forecasts)
+render_forecast_cards(forecasts, selected_horizon=current_horizon)
 
 # ── Market Insight ────────────────────────────────────────────────────────────
 st.markdown("<div style='margin-top:1.5rem;'></div>", unsafe_allow_html=True)

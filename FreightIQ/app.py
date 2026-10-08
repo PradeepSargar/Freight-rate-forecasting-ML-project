@@ -31,6 +31,11 @@ st.set_page_config(
 from utils.theme import inject_css
 inject_css()
 
+# ── Forecast Horizon Session State Initialization ────────────────────────────
+if "forecast_horizon" not in st.session_state:
+    st.session_state["forecast_horizon"] = 7
+st.session_state["selected_horizon"] = f"{st.session_state['forecast_horizon']} observations"
+
 # ── Sidebar Brand ────────────────────────────────────────────────────────────
 from components.sidebar import render_sidebar_top, render_sidebar_bottom
 render_sidebar_top()

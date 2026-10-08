@@ -108,12 +108,21 @@ def build_bdi_forecast_chart(
     hist_df: pd.DataFrame,
     forecasts: list[dict | None],
     title: str = "BDI Historical Trend & Forecast",
+    selected_horizon: int | None = None,
 ) -> go.Figure:
     """
     Large interactive chart: historical BDI line + scatter forecast points.
     hist_df must have columns: Date, BDI.
     forecasts: list of forecast dicts from data_loader.
+    selected_horizon: active forecast horizon (7, 14, or 30) to visually highlight.
     """
+    if selected_horizon is None:
+        try:
+            import streamlit as st
+            selected_horizon = st.session_state.get("forecast_horizon", 7)
+        except Exception:
+            selected_horizon = 7
+
     fig = go.Figure()
 
     if hist_df is not None and not hist_df.empty:
@@ -148,26 +157,60 @@ def build_bdi_forecast_chart(
         if fc is None:
             continue
         h = fc["horizon"]
+        h_days = fc.get("horizon_days") or int("".join(filter(str.isdigit, str(h))) or 0)
+        is_selected = (h_days == selected_horizon)
         color = HORIZON_COLORS.get(h, C_ACCENT)
         label = HORIZON_LABELS.get(h, h)
+
+        if is_selected:
+            marker_size = 15
+            marker_line = dict(color="#FFFFFF", width=2.5)
+            text_str = f"  <b>★ {label}: {fc['forecasted_bdi']:,.0f} (Active)</b>"
+            text_font = dict(color=color, size=11)
+            name_str = f"Forecast {label} (Active)"
+        else:
+            marker_size = 9
+            marker_line = dict(color=C_PAPER, width=1)
+            text_str = f"  {label}: {fc['forecasted_bdi']:,.0f}"
+            text_font = dict(color=color, size=9)
+            name_str = f"Forecast {label}"
+
         fig.add_trace(
             go.Scatter(
                 x=[fc["forecast_date"]],
                 y=[fc["forecasted_bdi"]],
                 mode="markers+text",
-                name=f"Forecast {label}",
-                marker=dict(color=color, size=12, symbol="diamond",
-                            line=dict(color=C_PAPER, width=1.5)),
-                text=[f"  {label}: {fc['forecasted_bdi']:,.0f}"],
+                name=name_str,
+                marker=dict(
+                    color=color,
+                    size=marker_size,
+                    symbol="diamond",
+                    line=marker_line,
+                ),
+                text=[text_str],
                 textposition="middle right",
-                textfont=dict(color=color, size=10),
+                textfont=text_font,
                 hovertemplate=(
-                    f"<b>{label} Forecast</b><br>"
+                    f"<b>{label} Forecast {'[Active Horizon]' if is_selected else ''}</b><br>"
                     "Date: <b>%{x|%d %b %Y}</b><br>"
                     "BDI: <b>%{y:,.2f}</b><extra></extra>"
                 ),
             )
         )
+
+        # Highlight projection line from last historical BDI to the active forecast point
+        if is_selected and hist_df is not None and not hist_df.empty:
+            last_row = hist_df.iloc[-1]
+            fig.add_trace(
+                go.Scatter(
+                    x=[last_row["Date"], fc["forecast_date"]],
+                    y=[last_row["BDI"], fc["forecasted_bdi"]],
+                    mode="lines",
+                    name=f"{label} Trend Projection",
+                    line=dict(color=color, width=2, dash="dash"),
+                    hoverinfo="skip",
+                )
+            )
 
     # Forecast zone shading
     if hist_df is not None and not hist_df.empty:

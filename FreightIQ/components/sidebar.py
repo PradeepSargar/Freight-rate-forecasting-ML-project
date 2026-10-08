@@ -3,17 +3,18 @@ FreightIQ — Sidebar Component
 Renders a premium sidebar with branding, nav, model status, and horizon selector.
 """
 
+import textwrap
 import streamlit as st
 
 
-HORIZONS = ["7 observations", "14 observations", "30 observations"]
+HORIZONS = [7, 14, 30]
 
 
 def render_sidebar_top() -> None:
     """Render the top brand block in the sidebar."""
     with st.sidebar:
         st.markdown(
-            """
+            textwrap.dedent("""
             <div style="padding: 0.5rem 0 1rem 0;">
                 <div style="font-size:1.3rem; font-weight:800; color:#F8FAFC;
                             letter-spacing:0.06em; line-height:1.2;">
@@ -24,7 +25,7 @@ def render_sidebar_top() -> None:
                     Intelligent Freight Forecasting
                 </div>
             </div>
-            """,
+            """).strip(),
             unsafe_allow_html=True,
         )
 
@@ -33,7 +34,7 @@ def render_sidebar_bottom() -> None:
     """Render the model status, horizon selector, and info block below navigation."""
     with st.sidebar:
         st.markdown(
-            """
+            textwrap.dedent("""
             <div style="margin-top:0.5rem; margin-bottom:0.75rem; padding-top:0.75rem;
                         border-top:1px solid #1E2940;">
                 <div style="display:flex; align-items:center; gap:6px;">
@@ -47,7 +48,7 @@ def render_sidebar_bottom() -> None:
                     </span>
                 </div>
             </div>
-            """,
+            """).strip(),
             unsafe_allow_html=True,
         )
 
@@ -58,22 +59,21 @@ def render_sidebar_bottom() -> None:
             unsafe_allow_html=True,
         )
 
-        current_horizon = st.session_state.get("selected_horizon", "7 observations")
-        default_idx = HORIZONS.index(current_horizon) if current_horizon in HORIZONS else 0
+        if "forecast_horizon" not in st.session_state:
+            st.session_state["forecast_horizon"] = 7
 
         selected_horizon = st.radio(
-            label="forecast_horizon_sidebar",
+            "FORECAST HORIZON",
             options=HORIZONS,
-            format_func=lambda x: x.replace("observations", "Obs"),
-            index=default_idx,
+            format_func=lambda x: f"{x} Obs",
+            key="forecast_horizon",
             label_visibility="collapsed",
-            key="sidebar_horizon_radio",
         )
-        st.session_state["selected_horizon"] = selected_horizon
+        st.session_state["selected_horizon"] = f"{selected_horizon} observations"
 
         # ── Model info block ────────────────────────────────────────────────
         st.markdown(
-            """
+            textwrap.dedent("""
             <div style="margin-top:1.25rem; padding-top:0.75rem; border-top:1px solid #1E2940;">
                 <div style="font-size:0.68rem; color:#64748B; text-transform:uppercase;
                             letter-spacing:0.08em; margin-bottom:0.5rem;">Model Info</div>
@@ -85,18 +85,18 @@ def render_sidebar_bottom() -> None:
                     <div><span style="color:#64748B;">Samples:</span> 3,204</div>
                 </div>
             </div>
-            """,
+            """).strip(),
             unsafe_allow_html=True,
         )
 
         # ── Footer ──────────────────────────────────────────────────────────
         st.markdown(
-            """
+            textwrap.dedent("""
             <div style="margin-top:1.5rem; padding-top:0.75rem; border-top:1px solid #1E2940;
                         font-size:0.65rem; color:#475569; text-align:left;">
                 &copy; 2026 FreightIQ
             </div>
-            """,
+            """).strip(),
             unsafe_allow_html=True,
         )
 
